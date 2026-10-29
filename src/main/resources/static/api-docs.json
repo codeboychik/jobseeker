@@ -1,0 +1,3309 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Jobseeker API",
+    "version": "0.1.0",
+    "description": "Personal-use API with no authentication or authorization. All POST requests require Idempotency-Key. Mutations use optimistic versions. Unknown fields are rejected. Dates use YYYY-MM-DD; timestamps require an offset. PATCH omits unchanged fields and uses null to clear optional fields."
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "paths": {
+    "/applications": {
+      "get": {
+        "summary": "Search and paginate application summaries",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "description": "Search all saved detail fields (not PDF/DOCX contents)."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "SAVED",
+                "APPLIED",
+                "INTERVIEWING",
+                "OFFERED",
+                "ACCEPTED",
+                "REJECTED",
+                "WITHDRAWN",
+                "CLOSED"
+              ]
+            }
+          },
+          {
+            "name": "archive",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["active", "archived", "all"],
+              "default": "active"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["company", "role", "postedDate", "appliedDate", "status"]
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["asc", "desc"],
+              "default": "asc"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create an application",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Application"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplicationCreate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/applications/{id}": {
+      "get": {
+        "summary": "Read complete application detail",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Application"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Edit application fields",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Application"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplicationPatch"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/applications/{id}/status-changes": {
+      "get": {
+        "summary": "Read immutable status history",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StatusChange"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Record a status change",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Application"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/applications/{id}/archive": {
+      "put": {
+        "summary": "Set archive state",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Application"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArchiveInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/round-types": {
+      "get": {
+        "summary": "List reusable types",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Type"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Define a reusable type",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Type"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TypeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rejection-reason-types": {
+      "get": {
+        "summary": "List reusable types",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Type"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Define a reusable type",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Type"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TypeInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/applications/{id}/rounds": {
+      "get": {
+        "summary": "List rounds",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Round"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Add rounds",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedChild"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoundCreate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/applications/{id}/rounds/{round}": {
+      "patch": {
+        "summary": "Edit rounds",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "round",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Application"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoundPatch"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/applications/{id}/notes": {
+      "get": {
+        "summary": "List notes",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Note"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Add notes",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedChild"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteCreate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/applications/{id}/notes/{note}": {
+      "patch": {
+        "summary": "Edit notes",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "note",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Application"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotePatch"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/applications/{id}/cv-attachments": {
+      "get": {
+        "summary": "List cv-attachments",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CvMetadata"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Add cv-attachments",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedChild"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/CvUpload"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/applications/{id}/cv-attachments/{cv}": {
+      "patch": {
+        "summary": "Edit cv-attachments",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "cv",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Application"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CvPatch"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/applications/{id}/rounds/{round}/questions": {
+      "get": {
+        "summary": "List questions for a round",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "round",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Question"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Add a question and optional answer",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "round",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedChild"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuestionCreate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/applications/{id}/rounds/{round}/questions/{question}": {
+      "patch": {
+        "summary": "Edit or reorder a Q&A entry",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "round",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "question",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Application"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuestionPatch"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Remove an erroneous Q&A entry",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "round",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "question",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Application"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuestionDelete"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/applications/{id}/rejection-reasons": {
+      "get": {
+        "summary": "List reasons including superseded history",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Reason"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Add or supersede a categorized assessment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedChild"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonCreate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/applications/{id}/cv-attachments/{cv}/download": {
+      "get": {
+        "summary": "Download original CV bytes without loading other files",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "cv",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/statistics/summary": {
+      "get": {
+        "summary": "Aggregate outcomes and reasons without duplicate application counts",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "description": "Search all saved detail fields (not PDF/DOCX contents)."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "SAVED",
+                "APPLIED",
+                "INTERVIEWING",
+                "OFFERED",
+                "ACCEPTED",
+                "REJECTED",
+                "WITHDRAWN",
+                "CLOSED"
+              ]
+            }
+          },
+          {
+            "name": "archive",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["active", "archived", "all"],
+              "default": "active"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Statistics"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/search/rebuild": {
+      "post": {
+        "summary": "Rebuild all derived search documents after direct imports",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, reference, version, or idempotency error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RebuildInput"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "IdempotencyKey": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "description": "Globally unique per operation. Identical retries return the original successful response; changed content returns 409."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "current": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": ["status", "message", "fields"],
+        "additionalProperties": false
+      },
+      "ApplicationCreate": {
+        "type": "object",
+        "properties": {
+          "company": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "role": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "jobUrl": {
+            "type": ["string", "null"],
+            "format": "uri",
+            "description": "Absolute http/https URL"
+          },
+          "externalReference": {
+            "type": ["string", "null"]
+          },
+          "postedDate": {
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "appliedDate": {
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "description": {
+            "type": ["string", "null"]
+          },
+          "companyFeedback": {
+            "type": ["string", "null"]
+          },
+          "expectedAmount": {
+            "type": ["number", "null"],
+            "exclusiveMinimum": 0,
+            "multipleOf": 0.01
+          },
+          "expectedCurrency": {
+            "type": ["string", "null"],
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "expectedPeriod": {
+            "type": ["string", "null"],
+            "enum": ["HOUR", "MONTH", "YEAR", null]
+          },
+          "expectedBasis": {
+            "type": ["string", "null"],
+            "enum": ["GROSS", "NET", "UNSPECIFIED", null]
+          },
+          "offeredAmount": {
+            "type": ["number", "null"],
+            "exclusiveMinimum": 0,
+            "multipleOf": 0.01
+          },
+          "offeredCurrency": {
+            "type": ["string", "null"],
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "offeredPeriod": {
+            "type": ["string", "null"],
+            "enum": ["HOUR", "MONTH", "YEAR", null]
+          },
+          "offeredBasis": {
+            "type": ["string", "null"],
+            "enum": ["GROSS", "NET", "UNSPECIFIED", null]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "SAVED",
+              "APPLIED",
+              "INTERVIEWING",
+              "OFFERED",
+              "ACCEPTED",
+              "REJECTED",
+              "WITHDRAWN",
+              "CLOSED"
+            ]
+          },
+          "eventTime": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "explanation": {
+            "type": ["string", "null"]
+          },
+          "actor": {
+            "type": ["string", "null"],
+            "maxLength": 300
+          }
+        },
+        "required": ["company", "role"],
+        "additionalProperties": false
+      },
+      "ApplicationPatch": {
+        "type": "object",
+        "properties": {
+          "company": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "role": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "jobUrl": {
+            "type": ["string", "null"],
+            "format": "uri",
+            "description": "Absolute http/https URL"
+          },
+          "externalReference": {
+            "type": ["string", "null"]
+          },
+          "postedDate": {
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "appliedDate": {
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "description": {
+            "type": ["string", "null"]
+          },
+          "companyFeedback": {
+            "type": ["string", "null"]
+          },
+          "expectedAmount": {
+            "type": ["number", "null"],
+            "exclusiveMinimum": 0,
+            "multipleOf": 0.01
+          },
+          "expectedCurrency": {
+            "type": ["string", "null"],
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "expectedPeriod": {
+            "type": ["string", "null"],
+            "enum": ["HOUR", "MONTH", "YEAR", null]
+          },
+          "expectedBasis": {
+            "type": ["string", "null"],
+            "enum": ["GROSS", "NET", "UNSPECIFIED", null]
+          },
+          "offeredAmount": {
+            "type": ["number", "null"],
+            "exclusiveMinimum": 0,
+            "multipleOf": 0.01
+          },
+          "offeredCurrency": {
+            "type": ["string", "null"],
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "offeredPeriod": {
+            "type": ["string", "null"],
+            "enum": ["HOUR", "MONTH", "YEAR", null]
+          },
+          "offeredBasis": {
+            "type": ["string", "null"],
+            "enum": ["GROSS", "NET", "UNSPECIFIED", null]
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "actor": {
+            "type": ["string", "null"],
+            "maxLength": 300
+          }
+        },
+        "required": ["version"],
+        "additionalProperties": false
+      },
+      "StatusInput": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "SAVED",
+              "APPLIED",
+              "INTERVIEWING",
+              "OFFERED",
+              "ACCEPTED",
+              "REJECTED",
+              "WITHDRAWN",
+              "CLOSED"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "eventTime": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "explanation": {
+            "type": ["string", "null"]
+          },
+          "actor": {
+            "type": ["string", "null"],
+            "maxLength": 300
+          }
+        },
+        "required": ["status", "version"],
+        "additionalProperties": false
+      },
+      "ArchiveInput": {
+        "type": "object",
+        "properties": {
+          "archived": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "actor": {
+            "type": ["string", "null"],
+            "maxLength": 300
+          }
+        },
+        "required": ["archived", "version"],
+        "additionalProperties": false
+      },
+      "TypeInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 200
+          }
+        },
+        "required": ["name"],
+        "additionalProperties": false
+      },
+      "ReasonCreate": {
+        "type": "object",
+        "properties": {
+          "typeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "explanation": {
+            "type": ["string", "null"]
+          },
+          "source": {
+            "type": "string",
+            "enum": ["COMPANY_FEEDBACK", "SELF_ASSESSMENT", "AI_ASSESSMENT"]
+          },
+          "likelihood": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "maximum": 100,
+            "multipleOf": 0.01
+          },
+          "evidence": {
+            "type": ["string", "null"]
+          },
+          "roundId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "questionId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "noteId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "rejectionEventId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "assessedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "model": {
+            "type": ["string", "null"]
+          },
+          "supersedesId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "applicationVersion": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "actor": {
+            "type": ["string", "null"],
+            "maxLength": 300
+          }
+        },
+        "required": ["typeId", "label", "source", "applicationVersion"],
+        "additionalProperties": false
+      },
+      "QuestionDelete": {
+        "type": "object",
+        "properties": {
+          "applicationVersion": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "actor": {
+            "type": ["string", "null"],
+            "maxLength": 300
+          }
+        },
+        "required": ["applicationVersion", "version"],
+        "additionalProperties": false
+      },
+      "RebuildInput": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      },
+      "RoundCreate": {
+        "type": "object",
+        "properties": {
+          "typeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": ["string", "null"]
+          },
+          "displayOrder": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "scheduledAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["PLANNED", "COMPLETED", "CANCELLED"]
+          },
+          "result": {
+            "type": "string",
+            "enum": ["PENDING", "PASSED", "FAILED", "NOT_PROVIDED"]
+          },
+          "feedback": {
+            "type": ["string", "null"]
+          },
+          "applicationVersion": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "actor": {
+            "type": ["string", "null"],
+            "maxLength": 300
+          }
+        },
+        "required": ["typeId", "applicationVersion"],
+        "additionalProperties": false
+      },
+      "RoundPatch": {
+        "type": "object",
+        "properties": {
+          "typeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": ["string", "null"]
+          },
+          "displayOrder": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "scheduledAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["PLANNED", "COMPLETED", "CANCELLED"]
+          },
+          "result": {
+            "type": "string",
+            "enum": ["PENDING", "PASSED", "FAILED", "NOT_PROVIDED"]
+          },
+          "feedback": {
+            "type": ["string", "null"]
+          },
+          "applicationVersion": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "actor": {
+            "type": ["string", "null"],
+            "maxLength": 300
+          }
+        },
+        "required": ["applicationVersion", "version"],
+        "additionalProperties": false
+      },
+      "QuestionCreate": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": "string",
+            "enum": ["EMPLOYER_ASKED", "CANDIDATE_ASKED"]
+          },
+          "question": {
+            "type": "string"
+          },
+          "answer": {
+            "type": ["string", "null"]
+          },
+          "notes": {
+            "type": ["string", "null"]
+          },
+          "displayOrder": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sourceNoteId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "applicationVersion": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "actor": {
+            "type": ["string", "null"],
+            "maxLength": 300
+          }
+        },
+        "required": ["direction", "question", "applicationVersion"],
+        "additionalProperties": false
+      },
+      "QuestionPatch": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": "string",
+            "enum": ["EMPLOYER_ASKED", "CANDIDATE_ASKED"]
+          },
+          "question": {
+            "type": "string"
+          },
+          "answer": {
+            "type": ["string", "null"]
+          },
+          "notes": {
+            "type": ["string", "null"]
+          },
+          "displayOrder": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sourceNoteId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "applicationVersion": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "actor": {
+            "type": ["string", "null"],
+            "maxLength": 300
+          }
+        },
+        "required": ["applicationVersion", "version"],
+        "additionalProperties": false
+      },
+      "NoteCreate": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "roundId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "applicationVersion": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "actor": {
+            "type": ["string", "null"],
+            "maxLength": 300
+          }
+        },
+        "required": ["text", "applicationVersion"],
+        "additionalProperties": false
+      },
+      "NotePatch": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "applicationVersion": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "actor": {
+            "type": ["string", "null"],
+            "maxLength": 300
+          }
+        },
+        "required": ["applicationVersion", "version"],
+        "additionalProperties": false
+      },
+      "CvCreate": {
+        "type": "object",
+        "properties": {
+          "usage": {
+            "type": "string",
+            "enum": ["PREPARED", "SENT"]
+          },
+          "sentDate": {
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "applicationVersion": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "actor": {
+            "type": ["string", "null"],
+            "maxLength": 300
+          }
+        },
+        "required": ["applicationVersion"],
+        "additionalProperties": false
+      },
+      "CvPatch": {
+        "type": "object",
+        "properties": {
+          "usage": {
+            "type": "string",
+            "enum": ["PREPARED", "SENT"]
+          },
+          "sentDate": {
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "applicationVersion": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "actor": {
+            "type": ["string", "null"],
+            "maxLength": 300
+          }
+        },
+        "required": ["applicationVersion", "version"],
+        "additionalProperties": false
+      },
+      "CvUpload": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "description": "Readable PDF or DOCX, maximum 10 MiB by default"
+          },
+          "applicationVersion": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "usage": {
+            "type": "string",
+            "enum": ["PREPARED", "SENT"]
+          },
+          "sentDate": {
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "actor": {
+            "type": ["string", "null"],
+            "maxLength": 300
+          }
+        },
+        "required": ["file", "applicationVersion"],
+        "additionalProperties": false
+      },
+      "Type": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": ["string", "null"]
+          },
+          "predefined": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": true
+      },
+      "StatusChange": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "previousStatus": {
+            "type": ["string", "null"]
+          },
+          "newStatus": {
+            "type": "string",
+            "enum": [
+              "SAVED",
+              "APPLIED",
+              "INTERVIEWING",
+              "OFFERED",
+              "ACCEPTED",
+              "REJECTED",
+              "WITHDRAWN",
+              "CLOSED"
+            ]
+          },
+          "eventTime": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "recordedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "source": {
+            "type": "string"
+          },
+          "actor": {
+            "type": ["string", "null"]
+          },
+          "explanation": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "CvMetadata": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "source": {
+            "type": "string"
+          },
+          "actor": {
+            "type": ["string", "null"]
+          },
+          "createdAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "applicationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fileId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "mediaType": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "checksum": {
+            "type": "string"
+          },
+          "usage": {
+            "type": "string",
+            "enum": ["PREPARED", "SENT"]
+          },
+          "sentDate": {
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "uploadedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "downloadUrl": {
+            "type": "string"
+          }
+        }
+      },
+      "Question": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "source": {
+            "type": "string"
+          },
+          "actor": {
+            "type": ["string", "null"]
+          },
+          "createdAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "direction": {
+            "type": "string",
+            "enum": ["EMPLOYER_ASKED", "CANDIDATE_ASKED"]
+          },
+          "question": {
+            "type": "string"
+          },
+          "answer": {
+            "type": ["string", "null"]
+          },
+          "notes": {
+            "type": ["string", "null"]
+          },
+          "displayOrder": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sourceNoteId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": true
+      },
+      "Note": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "source": {
+            "type": "string"
+          },
+          "actor": {
+            "type": ["string", "null"]
+          },
+          "createdAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "text": {
+            "type": "string"
+          },
+          "roundId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": true
+      },
+      "Reason": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "source": {
+            "type": "string",
+            "enum": ["COMPANY_FEEDBACK", "SELF_ASSESSMENT", "AI_ASSESSMENT"]
+          },
+          "actor": {
+            "type": ["string", "null"]
+          },
+          "createdAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "typeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "explanation": {
+            "type": ["string", "null"]
+          },
+          "likelihood": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "maximum": 100,
+            "multipleOf": 0.01
+          },
+          "evidence": {
+            "type": ["string", "null"]
+          },
+          "roundId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "questionId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "noteId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "rejectionEventId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "assessedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "model": {
+            "type": ["string", "null"]
+          },
+          "supersedesId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "superseded": {
+            "type": "boolean"
+          },
+          "typeName": {
+            "type": "string"
+          },
+          "typeCode": {
+            "type": "string"
+          },
+          "recordedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": true
+      },
+      "Round": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "source": {
+            "type": "string"
+          },
+          "actor": {
+            "type": ["string", "null"]
+          },
+          "createdAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "typeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": ["string", "null"]
+          },
+          "displayOrder": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "scheduledAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["PLANNED", "COMPLETED", "CANCELLED"]
+          },
+          "result": {
+            "type": "string",
+            "enum": ["PENDING", "PASSED", "FAILED", "NOT_PROVIDED"]
+          },
+          "feedback": {
+            "type": ["string", "null"]
+          },
+          "typeName": {
+            "type": "string"
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Question"
+            }
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Note"
+            }
+          }
+        },
+        "additionalProperties": true
+      },
+      "Application": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "source": {
+            "type": "string"
+          },
+          "actor": {
+            "type": ["string", "null"]
+          },
+          "createdAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "company": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "role": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "jobUrl": {
+            "type": ["string", "null"],
+            "format": "uri",
+            "description": "Absolute http/https URL"
+          },
+          "externalReference": {
+            "type": ["string", "null"]
+          },
+          "postedDate": {
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "appliedDate": {
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "description": {
+            "type": ["string", "null"]
+          },
+          "companyFeedback": {
+            "type": ["string", "null"]
+          },
+          "expectedAmount": {
+            "type": ["number", "null"],
+            "exclusiveMinimum": 0,
+            "multipleOf": 0.01
+          },
+          "expectedCurrency": {
+            "type": ["string", "null"],
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "expectedPeriod": {
+            "type": ["string", "null"],
+            "enum": ["HOUR", "MONTH", "YEAR", null]
+          },
+          "expectedBasis": {
+            "type": ["string", "null"],
+            "enum": ["GROSS", "NET", "UNSPECIFIED", null]
+          },
+          "offeredAmount": {
+            "type": ["number", "null"],
+            "exclusiveMinimum": 0,
+            "multipleOf": 0.01
+          },
+          "offeredCurrency": {
+            "type": ["string", "null"],
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "offeredPeriod": {
+            "type": ["string", "null"],
+            "enum": ["HOUR", "MONTH", "YEAR", null]
+          },
+          "offeredBasis": {
+            "type": ["string", "null"],
+            "enum": ["GROSS", "NET", "UNSPECIFIED", null]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "SAVED",
+              "APPLIED",
+              "INTERVIEWING",
+              "OFFERED",
+              "ACCEPTED",
+              "REJECTED",
+              "WITHDRAWN",
+              "CLOSED"
+            ]
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "statusChanges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatusChange"
+            }
+          },
+          "cvAttachments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CvMetadata"
+            }
+          },
+          "rounds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Round"
+            }
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Note"
+            }
+          },
+          "rejectionReasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Reason"
+            }
+          }
+        },
+        "additionalProperties": true
+      },
+      "CreatedChild": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "applicationVersion": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "application": {
+            "$ref": "#/components/schemas/Application"
+          }
+        },
+        "required": ["id", "applicationVersion", "application"],
+        "additionalProperties": false
+      },
+      "ApplicationPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Application"
+            }
+          },
+          "total": {
+            "type": "integer"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "pages": {
+            "type": "integer"
+          },
+          "size": {
+            "type": "integer"
+          }
+        }
+      },
+      "Statistics": {
+        "type": "object",
+        "description": "All counts share the dashboard's application filters. Current reasons exclude superseded/unassigned entries and use the current rejection episode. Per-category application counts are distinct; categories and sources can overlap.",
+        "properties": {
+          "applications": {
+            "type": "integer"
+          },
+          "currentlyRejected": {
+            "type": "integer"
+          },
+          "everRejected": {
+            "type": "integer"
+          },
+          "rejectionEvents": {
+            "type": "integer"
+          },
+          "reasonEntries": {
+            "type": "integer"
+          },
+          "rejectionsWithoutReason": {
+            "type": "integer"
+          },
+          "statusCounts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            }
+          },
+          "reasonGroups": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "reasonCategories": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "definitions": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}

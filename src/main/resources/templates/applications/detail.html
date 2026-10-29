@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${creating?'New application · Jobseeker':app.company+' · Jobseeker'}">
+    </title>
+    <link rel="stylesheet" href="/app.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/applications">
+        Jobseeker
+        <span>
+          Personal application tracker
+        </span>
+      </a>
+      <a th:href="${returnTo}">
+        ← All applications
+      </a>
+    </header>
+    <main class="detail-page">
+      <div class="page-heading">
+        <div>
+          <p class="eyebrow" th:text="${creating?'NEW OPPORTUNITY':'APPLICATION DETAIL'}">
+          </p>
+          <h1 th:text="${creating?'New application':app.company}">
+          </h1>
+          <p class="muted" th:unless="${creating}" th:text="${app.role}">
+          </p>
+        </div>
+        <span th:unless="${creating}" class="badge large" th:classappend="${'status-'+app.status}" th:text="${@forms.label(app.status)}">
+        </span>
+      </div>
+      <div class="alert" role="status" th:if="${saved}">
+        Saved successfully.
+      </div>
+      <div class="alert error" role="alert" th:if="${error!=null}">
+        <strong th:text="${error}">
+        </strong>
+        <ul>
+          <li th:each="entry:${fieldErrors}" th:text="|${entry.key}: ${entry.value}|">
+          </li>
+        </ul>
+        <p>
+          Your attempted text is preserved below. Review current data before submitting again.
+        </p>
+      </div>
+      <details class="panel section" open th:if="${currentValues!=null}">
+        <summary>
+          Current saved values — compare before resubmitting
+        </summary>
+        <dl>
+          <th:block th:each="entry:${currentValues}">
+            <dt>
+              <strong th:text="${@forms.fieldLabel(entry.key)}">
+              </strong>
+            </dt>
+            <dd class="prose" th:text="${entry.value==null?'Not recorded':@forms.time(entry.value)}">
+            </dd>
+          </th:block>
+        </dl>
+      </details>
+      <div class="alert" th:if="${!creating && app.duplicateCount>0}">
+        Another application has the same posting URL or external reference. Both records have been kept.
+      </div>
+      <nav class="section-nav" th:unless="${creating}">
+        <a href="#overview">
+          Overview
+        </a>
+        <a href="#cv">
+          CV files
+        </a>
+        <a href="#rounds">
+          Interview rounds
+        </a>
+        <a href="#notes">
+          Notes
+        </a>
+        <a href="#reasons">
+          Feedback
+          &amp;
+          reasons
+        </a>
+        <a href="#history">
+          History
+        </a>
+      </nav>
+      <section class="panel section" id="overview">
+        <div class="section-heading">
+          <h2>
+            Application
+            &amp;
+            role
+          </h2>
+          <span class="muted small">
+            Only company and role are required
+          </span>
+        </div>
+        <a th:if="${!creating && app.jobUrl!=null}" th:href="${app.jobUrl}" target="_blank" rel="noopener noreferrer">
+          Open original job posting ↗
+        </a>
+        <form method="post" th:action="${creating?'/applications':'/applications/'+app.id+'/edit'}">
+          <th:block th:replace="~{applications/fragments/forms :: formMeta('overview',${creating?null:app.version},null)}"/>
+          <div class="grid two">
+            <th:block th:replace="~{applications/fragments/forms :: field('overview','company','Company','text',${app.company},true)}"/>
+            <th:block th:replace="~{applications/fragments/forms :: field('overview','role','Role title','text',${app.role},true)}"/>
+            <th:block th:replace="~{applications/fragments/forms :: field('overview','jobUrl','Job posting URL','url',${app.jobUrl},false)}"/>
+            <th:block th:replace="~{applications/fragments/forms :: field('overview','externalReference','External job reference','text',${app.externalReference},false)}"/>
+            <th:block th:replace="~{applications/fragments/forms :: field('overview','postedDate','Job posted','date',${app.postedDate},false)}"/>
+            <th:block th:replace="~{applications/fragments/forms :: field('overview','appliedDate','Applied date','date',${app.appliedDate},false)}"/>
+          </div>
+          <th:block th:if="${creating}">
+            <th:block th:replace="~{applications/fragments/forms :: choices('overview','status','Initial status',${statuses},'SAVED',false)}"/>
+          </th:block>
+          <th:block th:replace="~{applications/fragments/forms :: text('overview','description','Role description',${app.description})}"/>
+          <div class="grid two">
+            <fieldset>
+              <legend>
+                Expected salary
+              </legend>
+              <th:block th:replace="~{applications/fragments/forms :: salary('expected',${app})}"/>
+            </fieldset>
+            <fieldset>
+              <legend>
+                Offered salary
+              </legend>
+              <th:block th:replace="~{applications/fragments/forms :: salary('offered',${app})}"/>
+            </fieldset>
+          </div>
+          <th:block th:replace="~{applications/fragments/forms :: text('overview','companyFeedback','Company feedback — what was actually communicated',${app.companyFeedback})}"/>
+          <button class="primary" type="submit" th:text="${creating?'Create application':'Save application'}">
+          </button>
+        </form>
+      </section>
+      <th:block th:unless="${creating}">
+        <section class="panel section" id="cv">
+          <div class="section-heading">
+            <h2>
+              CV files
+            </h2>
+            <span class="muted small">
+              Exact copies · PDF or DOCX
+            </span>
+          </div>
+          <p class="muted" th:if="${app.cvAttachments.isEmpty()}">
+            No CV attached yet. You can add an old or prepared copy at any time.
+          </p>
+          <article class="record" th:each="cv:${app.cvAttachments}">
+            <div class="row-between">
+              <div>
+                <a th:href="${cv.downloadUrl}" th:text="${cv.filename}">
+                </a>
+                <p class="muted small" th:text="|${cv.size} bytes · Uploaded ${@forms.time(cv.uploadedAt)}|">
+                </p>
+              </div>
+              <span class="badge" th:text="${@forms.label(cv.usage)}">
+              </span>
+            </div>
+            <details th:open="${@forms.failed('cv-'+cv.id)}">
+              <summary>
+                Usage and file details
+              </summary>
+              <p class="small mono" th:text="|SHA-256: ${cv.checksum}|">
+              </p>
+              <form method="post" th:action="|/applications/${app.id}/cv|">
+                <th:block th:replace="~{applications/fragments/forms :: formMeta(${ 'cv-'+cv.id },${cv.version},${app.version})}"/>
+                <input type="hidden" name="recordId" th:value="${cv.id}">
+                <div class="grid two">
+                  <th:block th:replace="~{applications/fragments/forms :: choices(${ 'cv-'+cv.id },'usage','Usage',${ {'PREPARED','SENT'} },${cv.usage},false)}"/>
+                  <th:block th:replace="~{applications/fragments/forms :: field(${ 'cv-'+cv.id },'sentDate','Sent date','date',${cv.sentDate},false)}"/>
+                </div>
+                <button>
+                  Save usage
+                </button>
+              </form>
+            </details>
+          </article>
+          <form method="post" enctype="multipart/form-data" th:action="|/applications/${app.id}/upload|" class="subform">
+            <th:block th:replace="~{applications/fragments/forms :: formMeta('upload',null,${app.version})}"/>
+            <label for="cv-file">
+              Upload a new copy
+              <input id="cv-file" type="file" name="file" accept=".pdf,.docx" required>
+            </label>
+            <p class="muted small">
+              Default limit: 10 MiB. Existing files are never replaced.
+            </p>
+            <div class="grid two">
+              <th:block th:replace="~{applications/fragments/forms :: choices('upload','usage','Usage',${ {'PREPARED','SENT'} },'PREPARED',false)}"/>
+              <th:block th:replace="~{applications/fragments/forms :: field('upload','sentDate','Sent date','date',null,false)}"/>
+            </div>
+            <button>
+              Upload CV
+            </button>
+          </form>
+        </section>
+        <section class="panel section" id="rounds">
+          <div class="section-heading">
+            <h2>
+              Interview rounds
+            </h2>
+            <span class="muted small" th:text="|${app.rounds.size()} rounds|">
+            </span>
+          </div>
+          <p class="muted" th:if="${app.rounds.isEmpty()}">
+            Add a screening call, interview, homework, or a round of your own.
+          </p>
+          <article class="round record" th:each="round:${app.rounds}" th:id="|round-${round.id}|">
+            <div class="row-between">
+              <div>
+                <p class="eyebrow" th:text="${round.typeName}">
+                </p>
+                <h3 th:text="${round.title?:round.typeName}">
+                </h3>
+              </div>
+              <div>
+                <span class="badge" th:text="${@forms.label(round.status)}">
+                </span>
+                <span class="badge subtle" th:text="${@forms.label(round.result)}">
+                </span>
+              </div>
+            </div>
+            <p class="muted small" th:text="|Scheduled: ${@forms.time(round.scheduledAt)} · Completed: ${@forms.time(round.completedAt)}|">
+            </p>
+            <p class="prose" th:if="${round.feedback!=null}" th:text="${round.feedback}">
+            </p>
+            <details th:open="${@forms.failed('round-'+round.id)}">
+              <summary>
+                Edit round
+              </summary>
+              <form method="post" th:action="|/applications/${app.id}/round|">
+                <th:block th:replace="~{applications/fragments/forms :: formMeta(${ 'round-'+round.id },${round.version},${app.version})}"/>
+                <input type="hidden" name="recordId" th:value="${round.id}">
+                <th:block th:replace="~{applications/fragments/forms :: roundFields(${ 'round-'+round.id },${round})}"/>
+                <button>
+                  Save round
+                </button>
+              </form>
+            </details>
+            <h4>
+              Questions
+              &amp;
+              answers
+            </h4>
+            <p class="muted small" th:if="${round.questions.isEmpty()}">
+              No questions recorded.
+            </p>
+            <article class="qa" th:each="qa:${round.questions}">
+              <span class="eyebrow" th:text="${@forms.label(qa.direction)}">
+              </span>
+              <p class="prose question" th:text="${qa.question}">
+              </p>
+              <p class="prose" th:if="${qa.answer!=null}" th:text="${qa.answer}">
+              </p>
+              <p class="muted" th:unless="${qa.answer!=null}">
+                No answer recorded.
+              </p>
+              <p class="prose muted small" th:if="${qa.notes!=null}" th:text="${qa.notes}">
+              </p>
+              <p class="small muted" th:if="${qa.sourceNoteId!=null}" th:text="|Source note: ${qa.sourceNoteId}|">
+              </p>
+              <details th:open="${@forms.failed('question-'+qa.id)}">
+                <summary>
+                  Edit question / answer
+                </summary>
+                <form method="post" th:action="|/applications/${app.id}/question|">
+                  <th:block th:replace="~{applications/fragments/forms :: formMeta(${ 'question-'+qa.id },${qa.version},${app.version})}"/>
+                  <input type="hidden" name="recordId" th:value="${qa.id}">
+                  <input type="hidden" name="parentRoundId" th:value="${round.id}">
+                  <th:block th:replace="~{applications/fragments/forms :: questionFields(${ 'question-'+qa.id },${qa})}"/>
+                  <button>
+                    Save question
+                  </button>
+                </form>
+                <form method="post" th:action="|/applications/${app.id}/delete-question|" class="compact">
+                  <th:block th:replace="~{applications/fragments/forms :: formMeta(${ 'delete-question-'+qa.id },${qa.version},${app.version})}"/>
+                  <input type="hidden" name="recordId" th:value="${qa.id}">
+                  <input type="hidden" name="parentRoundId" th:value="${round.id}">
+                  <button class="danger">
+                    Remove erroneous entry
+                  </button>
+                </form>
+              </details>
+            </article>
+            <details th:open="${@forms.failed('new-question-'+round.id)}">
+              <summary>
+                + Add a question / answer
+              </summary>
+              <form method="post" th:action="|/applications/${app.id}/question|">
+                <th:block th:replace="~{applications/fragments/forms :: formMeta(${ 'new-question-'+round.id },null,${app.version})}"/>
+                <input type="hidden" name="parentRoundId" th:value="${round.id}">
+                <th:block th:replace="~{applications/fragments/forms :: questionFields(${ 'new-question-'+round.id },null)}"/>
+                <button>
+                  Add question
+                </button>
+              </form>
+            </details>
+            <h4>
+              Round notes / dictation
+            </h4>
+            <th:block th:each="note:${round.notes}">
+              <th:block th:replace="~{applications/fragments/forms :: noteRecord(${note})}"/>
+            </th:block>
+            <form method="post" th:action="|/applications/${app.id}/note|" class="subform">
+              <th:block th:replace="~{applications/fragments/forms :: formMeta(${ 'new-note-'+round.id },null,${app.version})}"/>
+              <input type="hidden" name="roundId" th:value="${round.id}">
+              <input type="hidden" name="parentRoundId" th:value="${round.id}">
+              <th:block th:replace="~{applications/fragments/forms :: text(${ 'new-note-'+round.id },'text','Paste notes or a dictated transcript',null)}"/>
+              <button>
+                Add round note
+              </button>
+            </form>
+          </article>
+          <details th:open="${@forms.failed('new-round')}">
+            <summary>
+              + Add a round
+            </summary>
+            <form method="post" th:action="|/applications/${app.id}/round|">
+              <th:block th:replace="~{applications/fragments/forms :: formMeta('new-round',null,${app.version})}"/>
+              <th:block th:replace="~{applications/fragments/forms :: roundFields('new-round',null)}"/>
+              <button>
+                Add round
+              </button>
+            </form>
+          </details>
+          <details th:open="${@forms.failed('round-type')}">
+            <summary>
+              + Define a custom round type
+            </summary>
+            <form method="post" th:action="|/applications/${app.id}/round-type|">
+              <th:block th:replace="~{applications/fragments/forms :: formMeta('round-type',null,null)}"/>
+              <th:block th:replace="~{applications/fragments/forms :: field('round-type','name','Round type name','text',null,true)}"/>
+              <button>
+                Create reusable type
+              </button>
+            </form>
+          </details>
+        </section>
+        <section class="panel section" id="notes">
+          <h2>
+            General notes
+          </h2>
+          <th:block th:each="note:${app.notes}">
+            <th:block th:if="${note.roundId==null}">
+              <th:block th:replace="~{applications/fragments/forms :: noteRecord(${note})}"/>
+            </th:block>
+          </th:block>
+          <form method="post" th:action="|/applications/${app.id}/note|">
+            <th:block th:replace="~{applications/fragments/forms :: formMeta('new-note',null,${app.version})}"/>
+            <th:block th:replace="~{applications/fragments/forms :: text('new-note','text','Notes, updates, or a dictated transcript',null)}"/>
+            <button>
+              Add note
+            </button>
+          </form>
+        </section>
+        <section class="panel section" id="reasons">
+          <h2>
+            Feedback
+            &amp;
+            possible reasons
+          </h2>
+          <div th:if="${app.companyFeedback!=null}">
+            <h3>
+              Reported company feedback
+            </h3>
+            <p class="prose" th:text="${app.companyFeedback}">
+            </p>
+          </div>
+          <p class="muted small">
+            Company feedback and assessments are kept separately. Estimated likelihoods can overlap and need not add up to 100%.
+          </p>
+          <p class="muted" th:if="${app.rejectionReasons.isEmpty()}">
+            No reasons recorded. An unknown reason is valid.
+          </p>
+          <article class="record" th:each="reason:${app.rejectionReasons}" th:classappend="${reason.superseded?'superseded':''}">
+            <div class="row-between">
+              <h3 th:text="${reason.label}">
+              </h3>
+              <span class="badge" th:text="${reason.source=='AI_ASSESSMENT'?'AI hypothesis':@forms.label(reason.source)}">
+              </span>
+            </div>
+            <p class="muted small">
+              <span th:text="${reason.typeName}">
+              </span>
+              <span th:if="${reason.superseded}">
+                · Superseded
+              </span>
+              <span th:if="${reason.rejectionEventId==null}">
+                · Unassigned concern
+              </span>
+            </p>
+            <p class="prose" th:if="${reason.explanation!=null}" th:text="${reason.explanation}">
+            </p>
+            <p th:if="${reason.likelihood!=null}" th:text="|Estimated likelihood: ${reason.likelihood}%|">
+            </p>
+            <p class="muted small" th:if="${reason.likelihood==null}">
+              Likelihood not assessed.
+            </p>
+            <p class="prose small" th:text="${reason.evidence?:'No supporting evidence supplied.'}">
+            </p>
+            <p class="small muted" th:text="|Assessed: ${@forms.time(reason.assessedAt)} · Model/assessor: ${reason.model?:'Not supplied'}|">
+            </p>
+            <details th:unless="${reason.superseded}" th:open="${@forms.failed('reason-'+reason.id)}">
+              <summary>
+                Correct or supersede this assessment
+              </summary>
+              <form method="post" th:action="|/applications/${app.id}/reason|">
+                <th:block th:replace="~{applications/fragments/forms :: formMeta(${ 'reason-'+reason.id },null,${app.version})}"/>
+                <input type="hidden" name="supersedesId" th:value="${reason.id}">
+                <th:block th:replace="~{applications/fragments/forms :: reasonFields(${ 'reason-'+reason.id },${reason})}"/>
+                <button>
+                  Save replacement assessment
+                </button>
+              </form>
+            </details>
+          </article>
+          <details th:open="${@forms.failed('new-reason')}">
+            <summary>
+              + Add a reason or concern
+            </summary>
+            <form method="post" th:action="|/applications/${app.id}/reason|">
+              <th:block th:replace="~{applications/fragments/forms :: formMeta('new-reason',null,${app.version})}"/>
+              <th:block th:replace="~{applications/fragments/forms :: reasonFields('new-reason',null)}"/>
+              <button>
+                Add reason
+              </button>
+            </form>
+          </details>
+          <details th:open="${@forms.failed('reason-type')}">
+            <summary>
+              + Define a reusable reason category
+            </summary>
+            <form method="post" th:action="|/applications/${app.id}/reason-type|">
+              <th:block th:replace="~{applications/fragments/forms :: formMeta('reason-type',null,null)}"/>
+              <th:block th:replace="~{applications/fragments/forms :: field('reason-type','name','Category name','text',null,true)}"/>
+              <button>
+                Create category
+              </button>
+            </form>
+          </details>
+        </section>
+        <section class="panel section" id="history">
+          <h2>
+            Status
+            &amp;
+            history
+          </h2>
+          <form method="post" th:action="|/applications/${app.id}/status|">
+            <th:block th:replace="~{applications/fragments/forms :: formMeta('status',${app.version},null)}"/>
+            <div class="grid two">
+              <th:block th:replace="~{applications/fragments/forms :: choices('status','status','New status',${statuses},${app.status},false)}"/>
+              <th:block th:replace="~{applications/fragments/forms :: field('status','eventTime','When it happened (optional)','datetime-local',null,false)}"/>
+            </div>
+            <th:block th:replace="~{applications/fragments/forms :: text('status','explanation','Explanation or correction',null)}"/>
+            <button>
+              Record status change
+            </button>
+          </form>
+          <ol class="history">
+            <li th:each="event:${app.statusChanges}">
+              <strong th:text="${@forms.label(event.newStatus)}">
+              </strong>
+              <span class="muted small" th:text="| · ${@forms.time(event.eventTime)}|">
+              </span>
+              <p class="prose" th:if="${event.explanation!=null}" th:text="${event.explanation}">
+              </p>
+              <p class="muted small" th:text="|Recorded ${@forms.time(event.recordedAt)} · ${@forms.label(event.source)} · #${event.sequence}|">
+              </p>
+            </li>
+          </ol>
+        </section>
+        <section class="panel section">
+          <div class="row-between">
+            <div>
+              <h2 th:text="${app.archived?'Archived application':'Keep your dashboard focused'}">
+              </h2>
+              <p class="muted small">
+                Archiving preserves the entire application and its outcome.
+              </p>
+            </div>
+            <form method="post" th:action="|/applications/${app.id}/archive|">
+              <th:block th:replace="~{applications/fragments/forms :: formMeta('archive',${app.version},null)}"/>
+              <input type="hidden" name="archived" th:value="${!app.archived}">
+              <button th:text="${app.archived?'Restore application':'Archive application'}">
+              </button>
+            </form>
+          </div>
+        </section>
+      </th:block>
+      <p class="muted small footer-note" th:text="|Times shown in ${@forms.zone}.|">
+      </p>
+    </main>
+  </body>
+</html>

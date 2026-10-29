@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <body>
+    <th:block th:if="${false}">
+      <th:block th:fragment="formMeta(form,recordVersion,appVersion)">
+        <input type="hidden" name="returnTo" th:value="${returnTo}">
+        <input type="hidden" name="formId" th:value="${form}">
+        <input th:if="${recordVersion!=null}" type="hidden" name="version" th:value="${recordVersion}">
+        <input th:if="${appVersion!=null}" type="hidden" name="applicationVersion" th:value="${appVersion}">
+      </th:block>
+      <label th:fragment="field(form,name,label,type,value,required)" th:for="${form+'-'+name}">
+        <span th:text="${label}">
+        </span>
+        <span th:if="${required}" aria-hidden="true">
+          *
+        </span>
+        <input th:id="${form+'-'+name}" th:name="${name}" th:type="${type}" th:value="${@forms.value(form,name,value)}" th:required="${required}" th:attr="step=${type=='number'?'any':null}">
+      </label>
+      <label th:fragment="text(form,name,label,value)" th:for="${form+'-'+name}">
+        <span th:text="${label}">
+        </span>
+        <textarea rows="4" th:id="${form+'-'+name}" th:name="${name}" th:text="${@forms.value(form,name,value)}">
+        </textarea>
+      </label>
+      <label th:fragment="choices(form,name,label,options,value,empty)" th:for="${form+'-'+name}">
+        <span th:text="${label}">
+        </span>
+        <select th:id="${form+'-'+name}" th:name="${name}">
+          <option th:if="${empty}" value="">
+            Not specified
+          </option>
+          <option th:each="option:${options}" th:value="${option}" th:selected="${#strings.equals(option,@forms.value(form,name,value))}" th:text="${@forms.label(option)}">
+          </option>
+        </select>
+      </label>
+      <label th:fragment="refs(form,name,label,options,value,empty)" th:for="${form+'-'+name}">
+        <span th:text="${label}">
+        </span>
+        <select th:id="${form+'-'+name}" th:name="${name}">
+          <option th:if="${empty}" value="">
+            Unassigned / not specified
+          </option>
+          <option th:each="option:${options}" th:value="${option.id}" th:selected="${#strings.equals(option.id,@forms.value(form,name,value))}" th:text="${option.name}">
+          </option>
+        </select>
+      </label>
+      <th:block th:fragment="salary(prefix,record)">
+        <th:block th:replace="~{applications/fragments/forms :: field('overview',${prefix+'Amount'},'Amount','number',${record[prefix+'Amount']},false)}"/>
+        <div class="grid two">
+          <th:block th:replace="~{applications/fragments/forms :: field('overview',${prefix+'Currency'},'Currency (e.g. CZK, EUR)','text',${record[prefix+'Currency']},false)}"/>
+          <th:block th:replace="~{applications/fragments/forms :: choices('overview',${prefix+'Period'},'Period',${periods},${record[prefix+'Period']},true)}"/>
+        </div>
+        <th:block th:replace="~{applications/fragments/forms :: choices('overview',${prefix+'Basis'},'Basis',${bases},${record[prefix+'Basis']},true)}"/>
+      </th:block>
+      <th:block th:fragment="roundFields(form,record)">
+        <div class="grid two">
+          <th:block th:replace="~{applications/fragments/forms :: refs(${form},'typeId','Round type',${roundTypes},${record==null?null:record.typeId},false)}"/>
+          <th:block th:replace="~{applications/fragments/forms :: field(${form},'title','Round title','text',${record==null?null:record.title},false)}"/>
+          <th:block th:replace="~{applications/fragments/forms :: field(${form},'scheduledAt','Scheduled','datetime-local',${record==null?null:record.scheduledAt},false)}"/>
+          <th:block th:replace="~{applications/fragments/forms :: field(${form},'completedAt','Completed','datetime-local',${record==null?null:record.completedAt},false)}"/>
+          <th:block th:replace="~{applications/fragments/forms :: choices(${form},'status','Round status',${ {'PLANNED','COMPLETED','CANCELLED'} },${record==null?'PLANNED':record.status},false)}"/>
+          <th:block th:replace="~{applications/fragments/forms :: choices(${form},'result','Round result',${ {'PENDING','PASSED','FAILED','NOT_PROVIDED'} },${record==null?'PENDING':record.result},false)}"/>
+        </div>
+        <th:block th:replace="~{applications/fragments/forms :: field(${form},'displayOrder','Display order','number',${record==null?0:record.displayOrder},true)}"/>
+        <th:block th:replace="~{applications/fragments/forms :: text(${form},'feedback','Round feedback',${record==null?null:record.feedback})}"/>
+      </th:block>
+      <th:block th:fragment="questionFields(form,record)">
+        <th:block th:replace="~{applications/fragments/forms :: choices(${form},'direction','Who asked?',${ {'EMPLOYER_ASKED','CANDIDATE_ASKED'} },${record==null?'EMPLOYER_ASKED':record.direction},false)}"/>
+        <th:block th:replace="~{applications/fragments/forms :: text(${form},'question','Question (required)',${record==null?null:record.question})}"/>
+        <th:block th:replace="~{applications/fragments/forms :: text(${form},'answer','Answer (optional)',${record==null?null:record.answer})}"/>
+        <th:block th:replace="~{applications/fragments/forms :: text(${form},'notes','Additional notes',${record==null?null:record.notes})}"/>
+        <div class="grid two">
+          <th:block th:replace="~{applications/fragments/forms :: field(${form},'displayOrder','Display order','number',${record==null?0:record.displayOrder},true)}"/>
+          <th:block th:replace="~{applications/fragments/forms :: refs(${form},'sourceNoteId','Source note',${noteRefs},${record==null?null:record.sourceNoteId},true)}"/>
+        </div>
+      </th:block>
+      <article class="note record" th:fragment="noteRecord(note)">
+        <p class="prose" th:text="${note.text}">
+        </p>
+        <p class="muted small" th:text="|${@forms.time(note.createdAt)} · ${@forms.label(note.source)}|">
+        </p>
+        <details th:open="${@forms.failed('note-'+note.id)}">
+          <summary>
+            Correct note
+          </summary>
+          <form method="post" th:action="|/applications/${app.id}/note|">
+            <th:block th:replace="~{applications/fragments/forms :: formMeta(${ 'note-'+note.id },${note.version},${app.version})}"/>
+            <input type="hidden" name="recordId" th:value="${note.id}">
+            <input th:if="${note.roundId!=null}" type="hidden" name="parentRoundId" th:value="${note.roundId}">
+            <th:block th:replace="~{applications/fragments/forms :: text(${ 'note-'+note.id },'text','Note',${note.text})}"/>
+            <button>
+              Save note
+            </button>
+          </form>
+        </details>
+      </article>
+      <th:block th:fragment="reasonFields(form,record)">
+        <div class="grid two">
+          <th:block th:replace="~{applications/fragments/forms :: refs(${form},'typeId','Category',${reasonTypes},${record==null?null:record.typeId},false)}"/>
+          <th:block th:replace="~{applications/fragments/forms :: field(${form},'label','Short reason','text',${record==null?null:record.label},true)}"/>
+          <th:block th:replace="~{applications/fragments/forms :: choices(${form},'source','Source',${ {'COMPANY_FEEDBACK','SELF_ASSESSMENT','AI_ASSESSMENT'} },${record==null?'SELF_ASSESSMENT':record.source},false)}"/>
+          <th:block th:replace="~{applications/fragments/forms :: field(${form},'likelihood','Estimated likelihood, 0–100 (optional)','number',${record==null?null:record.likelihood},false)}"/>
+        </div>
+        <th:block th:replace="~{applications/fragments/forms :: text(${form},'explanation','Explanation',${record==null?null:record.explanation})}"/>
+        <th:block th:replace="~{applications/fragments/forms :: text(${form},'evidence','Supporting evidence',${record==null?null:record.evidence})}"/>
+        <div class="grid two">
+          <th:block th:replace="~{applications/fragments/forms :: refs(${form},'rejectionEventId','Rejection event (or leave as a concern)',${rejectionRefs},${record==null?currentRejectionId:record.rejectionEventId},true)}"/>
+          <th:block th:replace="~{applications/fragments/forms :: refs(${form},'roundId','Related round',${roundRefs},${record==null?null:record.roundId},true)}"/>
+          <th:block th:replace="~{applications/fragments/forms :: refs(${form},'questionId','Related question',${questionRefs},${record==null?null:record.questionId},true)}"/>
+          <th:block th:replace="~{applications/fragments/forms :: refs(${form},'noteId','Related note',${noteRefs},${record==null?null:record.noteId},true)}"/>
+          <th:block th:replace="~{applications/fragments/forms :: field(${form},'assessedAt','Assessed at (optional)','datetime-local',${record==null?null:record.assessedAt},false)}"/>
+          <th:block th:replace="~{applications/fragments/forms :: field(${form},'model','Model / assessor','text',${record==null?null:record.model},false)}"/>
+        </div>
+      </th:block>
+    </th:block>
+  </body>
+</html>

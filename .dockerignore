@@ -1,0 +1,8 @@
+target
+.git
+.idea
+.build-cache
+.tools
+.logs
+.env
+*.log

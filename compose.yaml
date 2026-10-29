@@ -1,0 +1,32 @@
+services:
+  db:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: jobseeker
+      POSTGRES_USER: jobseeker
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-jobseeker}
+    ports:
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jobseeker -d jobseeker"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  app:
+    image: jobseeker:0.1.0
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-8080}:8080"
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/jobseeker
+      DB_USER: jobseeker
+      DB_PASSWORD: ${DB_PASSWORD:-jobseeker}
+    depends_on:
+      db:
+        condition: service_healthy
+volumes:
+  postgres-data:

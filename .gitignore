@@ -1,0 +1,8 @@
+/target/
+/.build-cache/
+/.tools/
+/.logs/
+/.idea/
+*.iml
+.env
+*.log

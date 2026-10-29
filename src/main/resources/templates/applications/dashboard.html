@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Applications · Jobseeker</title>
+    <link rel="stylesheet" href="/app.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/applications"
+        >Jobseeker<span>Personal application tracker</span></a
+      ><a href="/api-docs.json">API specification</a>
+    </header>
+    <main>
+      <div class="page-heading">
+        <div>
+          <p class="eyebrow">YOUR WORKSPACE</p>
+          <h1>Applications</h1>
+          <p class="muted">
+            A record of each opportunity, conversation, and outcome.
+          </p>
+        </div>
+        <a
+          class="button primary"
+          th:href="@{/applications/new(returnTo=${returnTo})}"
+          >+ New application</a
+        >
+      </div>
+      <div class="stats" aria-label="Application statistics">
+        <div>
+          <span>Applications</span
+          ><strong th:text="${summary.applications}">0</strong>
+        </div>
+        <div>
+          <span>Interviewing</span
+          ><strong th:text="${summary.statusCounts.INTERVIEWING}">0</strong>
+        </div>
+        <div>
+          <span>Offers received</span
+          ><strong th:text="${summary.statusCounts.OFFERED}">0</strong>
+        </div>
+        <div>
+          <span>Rejected</span
+          ><strong th:text="${summary.currentlyRejected}">0</strong>
+        </div>
+      </div>
+      <section class="panel">
+        <form action="/applications" method="get" class="filters">
+          <label class="search"
+            >Search all details<input
+              type="search"
+              name="q"
+              th:value="${filter.q}"
+              placeholder="Company, interview question, note, reason…"
+              maxlength="500"
+          /></label>
+          <label
+            >Status<select name="status">
+              <option value="">All statuses</option>
+              <option
+                th:each="status:${statuses}"
+                th:value="${status}"
+                th:selected="${status==filter.status}"
+                th:text="${@forms.label(status)}"
+              ></option></select
+          ></label>
+          <label
+            >Records<select name="archive">
+              <option value="active" th:selected="${filter.archive=='active'}">
+                Active
+              </option>
+              <option
+                value="archived"
+                th:selected="${filter.archive=='archived'}"
+              >
+                Archived
+              </option>
+              <option value="all" th:selected="${filter.archive=='all'}">
+                All records
+              </option>
+            </select></label
+          >
+          <label
+            >Sort by<select name="sort">
+              <option value="">Default</option>
+              <option
+                th:each="field:${ {'company','role','postedDate','appliedDate','status'} }"
+                th:value="${field}"
+                th:selected="${field==filter.sort}"
+                th:text="${field=='postedDate'?'Job posted':field=='appliedDate'?'Applied':@forms.label(field)}"
+              ></option></select
+          ></label>
+          <label
+            >Order<select name="direction">
+              <option value="asc" th:selected="${filter.direction=='asc'}">
+                Ascending
+              </option>
+              <option value="desc" th:selected="${filter.direction=='desc'}">
+                Descending
+              </option>
+            </select></label
+          >
+          <button type="submit">Search</button
+          ><a class="reset" href="/applications">Reset</a>
+        </form>
+        <div class="table-heading">
+          <strong th:text="|${page.total} applications|">0 applications</strong
+          ><span class="muted small" th:if="${!#strings.isEmpty(filter.q)}"
+            >Matching across all saved details</span
+          >
+        </div>
+        <div class="table-scroll" th:unless="${page.items.isEmpty()}">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Company</th>
+                <th scope="col">Role</th>
+                <th scope="col">Job posted</th>
+                <th scope="col">Applied</th>
+                <th scope="col">Current status</th>
+                <th scope="col">Detail</th>
+              </tr>
+            </thead>
+            <tbody>
+              <th:block th:each="app:${page.items}">
+                <tr>
+                  <td>
+                    <strong th:text="${app.company}"></strong
+                    ><span class="badge subtle" th:if="${app.archived}"
+                      >Archived</span
+                    >
+                  </td>
+                  <td th:text="${app.role}"></td>
+                  <td th:text="${app.postedDate?:'Unknown'}"></td>
+                  <td th:text="${app.appliedDate?:'Unknown'}"></td>
+                  <td>
+                    <span
+                      class="badge"
+                      th:classappend="${'status-'+app.status}"
+                      th:text="${@forms.label(app.status)}"
+                    ></span>
+                  </td>
+                  <td>
+                    <a
+                      th:href="@{/applications/{id}(id=${app.id},returnTo=${returnTo})}+${'#'+app.matchAnchor}"
+                      >View<span
+                        class="sr-only"
+                        th:text="| ${app.company} ${app.role}|"
+                      ></span>
+                      →</a
+                    >
+                  </td>
+                </tr>
+                <tr
+                  class="match-row"
+                  th:if="${!#strings.isEmpty(app.matchExcerpt)}"
+                >
+                  <td colspan="6">
+                    <span
+                      class="match-label"
+                      th:text="${app.matchSection}"
+                    ></span
+                    ><span th:text="${app.matchExcerpt}"></span>
+                  </td>
+                </tr>
+              </th:block>
+            </tbody>
+          </table>
+        </div>
+        <div class="empty" th:if="${page.items.isEmpty()}">
+          <h2
+            th:text="${page.total==0 && #strings.isEmpty(filter.q) && filter.archive=='active'?'Your next opportunity starts here':'No applications on this page'}"
+          ></h2>
+          <p class="muted">
+            Add an application or adjust the search and filters.
+          </p>
+          <a th:href="@{/applications/new(returnTo=${returnTo})}"
+            >Create an application →</a
+          >
+        </div>
+        <nav class="pagination" aria-label="Application pages">
+          <a th:if="${page.page>0}" th:href="${previousUrl}">← Previous</a
+          ><span
+            th:text="|Page ${page.page+1} of ${page.pages>0?page.pages:1}|"
+          ></span
+          ><a th:if="${page.page+1<page.pages}" th:href="${nextUrl}">Next →</a>
+        </nav>
+      </section>
+      <p class="muted small footer-note">
+        Search includes interview Q&amp;A, notes, feedback, reasons, and CV
+        filenames. Original CV files are kept in PostgreSQL.
+      </p>
+    </main>
+  </body>
+</html>
